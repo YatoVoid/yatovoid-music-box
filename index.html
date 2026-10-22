@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>YatoVoid Music Box</title>
+  <meta name="description" content="A free 8-bit music editor that runs in your browser. Write chiptune melodies on a piano roll, add chords, and export WAV, MIDI or song files.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' rx='3' fill='%23171320'/%3E%3Crect x='9' y='3' width='2' height='8' fill='%23b48cff'/%3E%3Crect x='11' y='3' width='2' height='2' fill='%23b48cff'/%3E%3Crect x='5' y='10' width='5' height='3' fill='%23b48cff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">YatoVoid</span>
+      <span class="logo-sub">Music Box</span>
+    </div>
+    <div class="song-title">
+      <label for="songName" class="visually-hidden">Song name</label>
+      <input id="songName" type="text" maxlength="60" spellcheck="false" autocomplete="off">
+      <span id="saveState" class="save-state"></span>
+    </div>
+    <nav class="file-actions" aria-label="Song">
+      <button id="btnNew" type="button">New</button>
+      <button id="btnSave" type="button" title="Save to this browser (Ctrl+S)">Save</button>
+      <button id="btnLibrary" type="button" aria-expanded="false" aria-controls="library">My songs</button>
+      <span class="divider" aria-hidden="true"></span>
+      <button id="btnImport" type="button" title="Open a .json song or a .mid file">Upload</button>
+      <input id="fileInput" type="file" accept=".json,.mid,.midi,application/json,audio/midi" hidden>
+      <span class="download-group" role="group" aria-label="Download">
+        <span class="group-label">Download</span>
+        <button id="btnExportJson" type="button" title="Song file you can upload again later">Song</button>
+        <button id="btnExportMidi" type="button">MIDI</button>
+        <button id="btnExportWav" type="button">WAV</button>
+      </span>
+      <span class="divider" aria-hidden="true"></span>
+      <button id="btnHelp" type="button" aria-expanded="false" aria-controls="help">Help</button>
+    </nav>
+  </header>
+
+  <section id="library" class="panel" hidden aria-label="My songs">
+    <div class="panel-head">
+      <h2>My songs</h2>
+      <button type="button" data-close class="ghost">Close</button>
+    </div>
+    <ul id="songList" class="song-list"></ul>
+    <p id="libraryEmpty" class="muted">No saved songs yet. Press <kbd>Save</kbd> to keep the current song here.</p>
+    <h3>Examples</h3>
+    <ul id="demoList" class="song-list"></ul>
+    <p class="muted small">Songs are kept in this browser's local storage on this device. Use <strong>Download → Song</strong> to back them up or move them to another computer.</p>
+  </section>
+
+  <section id="help" class="panel" hidden aria-label="Help">
+    <div class="panel-head">
+      <h2>How to use it</h2>
+      <button type="button" data-close class="ghost">Close</button>
+    </div>
+    <div class="help-cols">
+      <div>
+        <h3>Mouse</h3>
+        <table class="keys-table">
+          <tr><td>Click empty space</td><td>Add a note (length from <em>Note</em>)</td></tr>
+          <tr><td>Drag a note</td><td>Move it, hearing each pitch</td></tr>
+          <tr><td>Drag a note's right edge</td><td>Make it longer or shorter</td></tr>
+          <tr><td>Shift + drag empty space</td><td>Select a group of notes</td></tr>
+          <tr><td>Shift / Ctrl + click a note</td><td>Add or remove it from the selection</td></tr>
+          <tr><td>Right-click or double-click</td><td>Delete a note</td></tr>
+          <tr><td>Click the bar numbers</td><td>Choose where playback starts</td></tr>
+          <tr><td>Click a key on the left</td><td>Hear that pitch</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Keyboard</h3>
+        <table class="keys-table">
+          <tr><td><kbd>Space</kbd></td><td>Play / stop</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut, paste at the mouse position</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd></td><td>Duplicate the selection right after itself</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>A</kbd></td><td>Select all notes</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>Z</kbd> / <kbd>Ctrl</kbd> <kbd>Y</kbd></td><td>Undo / redo</td></tr>
+          <tr><td><kbd>Ctrl</kbd> <kbd>S</kbd></td><td>Save to My songs</td></tr>
+          <tr><td><kbd>Delete</kbd></td><td>Delete selected notes</td></tr>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd> / <kbd>←</kbd> <kbd>→</kbd></td><td>Move selection by a semitone / a 16th</td></tr>
+          <tr><td><kbd>Shift</kbd> + arrows</td><td>Move by an octave / a beat</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Clear selection, close panels</td></tr>
+        </table>
+      </div>
+    </div>
+    <p class="muted small">On a Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>. The chord picker above each bar adds an automatic bass line and chord backing.</p>
+  </section>
+
+  <div class="toolbar" role="toolbar" aria-label="Song settings">
+    <button id="btnPlay" type="button" class="primary" aria-pressed="false">Play</button>
+    <label class="check"><input id="follow" type="checkbox" checked> Follow</label>
+    <label>Tempo <input id="bpm" type="number" min="40" max="240" step="1"></label>
+    <label>Time
+      <select id="timeSig"><option value="3">3/4</option><option value="4">4/4</option></select>
+    </label>
+    <label>Bars <input id="bars" type="number" min="1" max="64" step="1"></label>
+    <label>Note
+      <select id="noteLen">
+        <option value="1">1/16</option>
+        <option value="2">1/8</option>
+        <option value="3">Dotted 1/8</option>
+        <option value="4" selected>1/4</option>
+        <option value="6">Dotted 1/4</option>
+        <option value="8">1/2</option>
+        <option value="12">Dotted 1/2</option>
+        <option value="16">Whole</option>
+      </select>
+    </label>
+    <label>Sound <select id="leadVoice"></select></label>
+    <span class="mixer" role="group" aria-label="Volume">
+      <label>Melody <input id="volLead" type="range" min="0" max="1.5" step="0.05"></label>
+      <label>Bass <input id="volBass" type="range" min="0" max="1.5" step="0.05"></label>
+      <label>Chords <input id="volChords" type="range" min="0" max="1.5" step="0.05"></label>
+    </span>
+    <label>Zoom <input id="zoom" type="range" min="8" max="28" step="1"></label>
+  </div>
+
+  <main id="scroller" class="editor" aria-label="Piano roll">
+    <div class="sheet">
+      <div class="corner corner-chord">Chord</div>
+      <div id="chordRow" class="chord-row"></div>
+      <div class="corner corner-bar">Bar</div>
+      <canvas id="ruler" class="ruler" title="Click to choose where playback starts"></canvas>
+      <canvas id="keys" class="keys"></canvas>
+      <div class="grid-wrap">
+        <canvas id="grid"></canvas>
+        <div id="playhead" class="playhead"></div>
+        <div id="box" class="select-box" hidden></div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/synth.js"></script>
+  <script src="js/midi.js"></script>
+  <script src="js/demos.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
