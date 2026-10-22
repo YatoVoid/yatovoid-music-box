@@ -10,8 +10,9 @@
   const DRAFT_KEY = "yatovoid.musicbox.draft", LIBRARY_KEY = "yatovoid.musicbox.library";
   const $ = id => document.getElementById(id);
 
-  const grid = $("grid"), ruler = $("ruler"), keys = $("keys");
-  const g = grid.getContext("2d"), rg = ruler.getContext("2d"), kg = keys.getContext("2d");
+  const grid = $("grid"), gridBg = $("gridBg"), ruler = $("ruler"), keys = $("keys");
+  const g = grid.getContext("2d"), bg = gridBg.getContext("2d", { alpha: false });
+  const rg = ruler.getContext("2d"), kg = keys.getContext("2d");
   const scroller = $("scroller"), playhead = $("playhead"), boxEl = $("box"), chordRow = $("chordRow");
 
   let CW = 14;                 // pixels per 16th-note step
@@ -87,7 +88,7 @@
     store.set(DRAFT_KEY, song);
     updateTitle();
     drawGrid();
-    if (source) scheduleRerender();
+    scheduleRender();
   }
   function refreshAll() {
     syncControls();
@@ -165,11 +166,13 @@
   const H = ROWS * RH;
 
   function layout() {
+    sizeCanvas(gridBg, W(), H);
     sizeCanvas(grid, W(), H);
     sizeCanvas(ruler, W(), 22);
     sizeCanvas(keys, KEYS_W, H);
     playhead.style.height = H + "px";
     buildChordRow();
+    drawBackground();
     drawKeys();
     drawRuler();
     placePlayhead(source ? null : cursorStep);
@@ -191,23 +194,36 @@
     ctx.fill();
   }
 
-  function drawGrid() {
+  // Rows and grid lines only change with layout or theme, so they live on their own layer.
+  function drawBackground() {
     const w = W(), spb = stepsPerBar();
-    g.clearRect(0, 0, w, H);
+    bg.clearRect(0, 0, w, H);
     for (let r = 0; r < ROWS; r++) {
       const m = HI - r;
-      g.fillStyle = isBlackKey(m) ? palette.surface2 : palette.surface;
-      g.fillRect(0, r * RH, w, RH);
-      if (m % 12 === 0) { g.fillStyle = palette.line; g.fillRect(0, r * RH + RH - 1, w, 1); }
+      bg.fillStyle = isBlackKey(m) ? palette.surface2 : palette.surface;
+      bg.fillRect(0, r * RH, w, RH);
+      if (m % 12 === 0) { bg.fillStyle = palette.line; bg.fillRect(0, r * RH + RH - 1, w, 1); }
     }
+    bg.fillStyle = palette.line;
     for (let i = 0; i <= totalSteps(); i++) {
       const bar = i % spb === 0, beat = i % STEPS_PER_BEAT === 0;
       if (!bar && !beat && CW < 10) continue;
-      g.globalAlpha = bar ? 1 : beat ? 0.55 : 0.22;
-      g.fillStyle = palette.line;
-      g.fillRect(i * CW, 0, bar ? 2 : 1, H);
+      bg.globalAlpha = bar ? 1 : beat ? 0.55 : 0.22;
+      bg.fillRect(i * CW, 0, bar ? 2 : 1, H);
     }
-    g.globalAlpha = 1;
+    bg.globalAlpha = 1;
+  }
+
+  // Coalesce redraws to at most one per animation frame.
+  let drawQueued = false;
+  function requestDraw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    requestAnimationFrame(() => { drawQueued = false; drawGrid(); });
+  }
+
+  function drawGrid() {
+    g.clearRect(0, 0, W(), H);
     for (const n of song.notes) {
       const x = n.s * CW, y = (HI - n.m) * RH;
       g.globalAlpha = n.s >= totalSteps() ? 0.35 : 1;
@@ -274,7 +290,68 @@
   }
 
   /* ---------- audio ---------- */
-  let audioCtx = null, source = null, startedAt = 0, loopSeconds = 0, playingStepSec = 0, raf = 0, rerenderTimer = 0;
+  let audioCtx = null, source = null, startedAt = 0, loopSeconds = 0, playingStepSec = 0, raf = 0, renderTimer = 0;
+  let wantPlaying = false;
+
+  // Audio is rendered in a background worker built from the synth code, so it works both online
+  // and when index.html is opened as a local file. If workers are unavailable it renders here.
+  const renderer = (() => {
+    let worker = null, nextId = 1;
+    const pending = new Map();
+    const runHere = (song, resolve) => setTimeout(() => resolve(renderSong(song)), 0);
+    try {
+      const code = `"use strict";(${synthLib})(self);
+        self.onmessage = e => { const mix = renderSong(e.data.song); self.postMessage({ id: e.data.id, mix }, [mix.buffer]); };`;
+      worker = new Worker(URL.createObjectURL(new Blob([code], { type: "text/javascript" })));
+      worker.onmessage = e => { const job = pending.get(e.data.id); pending.delete(e.data.id); if (job) job.resolve(e.data.mix); };
+      worker.onerror = e => {
+        e.preventDefault();
+        worker = null;
+        for (const job of pending.values()) runHere(job.song, job.resolve);
+        pending.clear();
+      };
+    } catch (e) { worker = null; }
+    return {
+      get usesWorker() { return !!worker; },
+      render(songCopy) {
+        return new Promise(resolve => {
+          if (!worker) return runHere(songCopy, resolve);
+          const id = nextId++;
+          pending.set(id, { song: songCopy, resolve });
+          worker.postMessage({ id, song: songCopy });
+        });
+      },
+    };
+  })();
+
+  // The rendered audio is cached against the song's contents, so pressing Play again is instant.
+  let cached = { key: null, mix: null }, inflight = { key: null, promise: null };
+  function getMix() {
+    const key = serialize();
+    if (cached.key === key) return Promise.resolve(cached.mix);
+    if (inflight.key === key) return inflight.promise;
+    const promise = renderer.render(JSON.parse(key)).then(mix => {
+      cached = { key, mix };
+      if (inflight.key === key) inflight = { key: null, promise: null };
+      return mix;
+    });
+    inflight = { key, promise };
+    return promise;
+  }
+  function scheduleRender() {
+    clearTimeout(renderTimer);
+    // Without a worker, rendering would block the page, so only do it when the song is playing.
+    if (!source && !renderer.usesWorker) return;
+    renderTimer = setTimeout(async () => {
+      const key = serialize();
+      const mix = await getMix();
+      // Swap in the new audio at the same position if the song is still playing and unchanged since.
+      if (source && key === serialize()) {
+        const step = currentStep();
+        startSource(mix, step);
+      }
+    }, source ? 150 : 400);
+  }
 
   function ctx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -291,18 +368,29 @@
     return src;
   }
 
-  function startPlayback(fromStep) {
-    const samples = renderSong(song);
-    stopSource();
-    source = playBuffer(samples);
-    source.loop = true;
-    loopSeconds = samples.length / SR;
-    playingStepSec = stepSeconds();
-    const offset = (fromStep * playingStepSec) % loopSeconds;
-    source.start(0, offset);
+  async function startPlayback(fromStep) {
+    wantPlaying = true;
+    ctx(); // create/resume audio inside the click so the browser allows sound
+    const key = serialize();
+    if (cached.key !== key) $("btnPlay").textContent = "Loading…";
+    $("btnPlay").setAttribute("aria-pressed", "true");
+    const mix = await getMix();
+    if (!wantPlaying) return; // stopped while loading
+    startSource(mix, fromStep);
+  }
+  function startSource(samples, fromStep) {
+    const next = playBuffer(samples);
+    next.loop = true;
+    const nextLoop = samples.length / SR;
+    const nextStepSec = stepSeconds();
+    const offset = (fromStep * nextStepSec) % nextLoop;
+    next.start(0, offset);
+    stopSource(); // start the new buffer first, then drop the old one, to avoid a gap
+    source = next;
+    loopSeconds = nextLoop;
+    playingStepSec = nextStepSec;
     startedAt = audioCtx.currentTime - offset;
     $("btnPlay").textContent = "Stop";
-    $("btnPlay").setAttribute("aria-pressed", "true");
     cancelAnimationFrame(raf);
     tick();
   }
@@ -310,6 +398,7 @@
     if (source) { try { source.stop(); } catch (e) { /* already stopped */ } source = null; }
   }
   function stopPlayback() {
+    wantPlaying = false;
     stopSource();
     cancelAnimationFrame(raf);
     $("btnPlay").textContent = "Play";
@@ -326,15 +415,11 @@
     }
     raf = requestAnimationFrame(tick);
   }
-  function scheduleRerender() {
-    clearTimeout(rerenderTimer);
-    rerenderTimer = setTimeout(() => { if (source) startPlayback(currentStep()); }, 120);
-  }
   function placePlayhead(step) {
     if (step == null) return;
     playhead.style.transform = `translateX(${step * CW}px)`;
   }
-  function togglePlay() { source ? stopPlayback() : startPlayback(cursorStep); }
+  function togglePlay() { wantPlaying ? stopPlayback() : startPlayback(cursorStep); }
 
   let lastPreview = 0;
   function preview(m) {
@@ -438,7 +523,7 @@
         if (nx1 > x0 && nx0 < x1 && ny1 > y0 && ny0 < y1) selected.add(n);
       }
     }
-    drawGrid();
+    requestDraw();
   });
 
   function endDrag() {
@@ -551,7 +636,7 @@
   }
 
   function loadSong(data, message) {
-    if (source) stopPlayback();
+    if (wantPlaying) stopPlayback();
     pushUndo();
     song = cleanSong(data);
     selected.clear();
@@ -658,7 +743,8 @@
   $("btnExportMidi").addEventListener("click", () => download(new Blob([exportMidi(song)], { type: "audio/midi" }), fileBase() + ".mid"));
   $("btnExportWav").addEventListener("click", () => {
     toast("Rendering audio…");
-    setTimeout(() => download(encodeWav(renderSong(song)), fileBase() + ".wav"), 30);
+    const name = fileBase() + ".wav";
+    getMix().then(mix => download(encodeWav(mix), name));
   });
 
   /* ---------- toast ---------- */
@@ -686,7 +772,7 @@
     try { clipboard = JSON.parse(localStorage.getItem("yatovoid.musicbox.clipboard")) || []; } catch (e) { clipboard = []; }
 
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    const repaint = () => { readPalette(); drawKeys(); drawRuler(); drawGrid(); };
+    const repaint = () => { readPalette(); drawBackground(); drawKeys(); drawRuler(); drawGrid(); };
     scheme.addEventListener ? scheme.addEventListener("change", repaint) : scheme.addListener(repaint);
     new MutationObserver(repaint).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     window.addEventListener("resize", () => { layout(); drawGrid(); });

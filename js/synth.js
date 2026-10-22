@@ -7,6 +7,10 @@
  */
 "use strict";
 
+// Wrapped in a function so the same code can also be started inside a background worker.
+function synthLib(global) {
+"use strict";
+
 const SR = 44100;
 const STEPS_PER_BEAT = 4; // the grid is in 16th notes
 
@@ -217,3 +221,11 @@ function encodeWav(samples) {
   for (let i = 0; i < samples.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 32767, true);
   return new Blob([buf], { type: "audio/wav" });
 }
+
+Object.assign(global, {
+  SR, STEPS_PER_BEAT, NOTE_NAMES, hz, noteName, noteNumber, CHORD_ROOTS, QUALITIES,
+  parseChord, backingPattern, VOICES, renderSong, renderPreview, encodeWav,
+});
+}
+
+synthLib(self);

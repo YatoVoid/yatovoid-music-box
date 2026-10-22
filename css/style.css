@@ -158,7 +158,8 @@ kbd {
 .ruler { position: sticky; top: 34px; z-index: 3; cursor: pointer; display: block; }
 .keys { position: sticky; left: 0; z-index: 2; display: block; border-right: 1px solid var(--line); cursor: pointer; }
 .grid-wrap { position: relative; }
-.grid-wrap canvas { display: block; cursor: crosshair; touch-action: none; }
+.grid-wrap canvas { display: block; cursor: crosshair; touch-action: none; position: relative; }
+.grid-wrap .grid-bg { position: absolute; top: 0; left: 0; pointer-events: none; }
 .playhead { position: absolute; top: 0; left: 0; width: 2px; background: var(--accent2); pointer-events: none; box-shadow: 0 0 8px var(--accent2); }
 .select-box { position: absolute; border: 1px dashed var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, transparent); pointer-events: none; }
 
