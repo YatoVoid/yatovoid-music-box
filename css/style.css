@@ -170,6 +170,7 @@ kbd {
 }
 .ruler-wrap { cursor: ew-resize; touch-action: none; }
 body.scrubbing, body.scrubbing * { cursor: ew-resize !important; user-select: none; }
+body.erasing .grid-view canvas { cursor: not-allowed; }
 body.playing .playhead { pointer-events: none; } /* while playing, drag the handle above instead */
 .transport { display: inline-flex; gap: 6px; }
 .select-box { position: absolute; z-index: 2; border: 1px dashed var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, transparent); pointer-events: none; }

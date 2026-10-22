@@ -46,6 +46,7 @@ Open **My songs** for your saved songs and three examples, and **Help** for ever
 | Shift + drag on empty space | Select a group of notes |
 | Shift or Ctrl + click a note | Add it to or remove it from the selection |
 | Right-click or double-click a note | Delete it |
+| Right-click and drag | Erase every note the mouse passes over (one undo step) |
 | Click or drag on the bar numbers | Move the playhead, even while the song plays |
 | Drag the playhead's handle or line | Place it on an exact spot (hold `Alt` to skip snapping) |
 | Click a key name on the left | Hear that pitch |

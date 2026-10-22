@@ -533,8 +533,12 @@
     hoverStep = Math.max(0, p.step);
     const hit = noteAt(p.x, p.m);
 
-    if (e.button === 2) { // right-click deletes
-      if (hit) { pushUndo(); removeNotes(selected.has(hit) ? [...selected] : [hit]); }
+    if (e.button === 2) { // right-click deletes; right-drag erases everything it passes over
+      grid.setPointerCapture(e.pointerId);
+      drag = { mode: "erase", before: serialize(), last: p };
+      if (hit && selected.has(hit) && selected.size > 1) eraseNotes([...selected]);
+      else eraseAlong(p, p);
+      document.body.classList.add("erasing");
       return;
     }
     if (e.button !== 0) return;
@@ -570,6 +574,11 @@
       grid.style.cursor = !hit ? "crosshair" : p.x > (hit.s + hit.d) * CW - Math.min(8, hit.d * CW / 3) ? "ew-resize" : "grab";
       return;
     }
+    if (drag.mode === "erase") {
+      eraseAlong(drag.last, p);
+      drag.last = p;
+      return;
+    }
     const dStep = p.step - drag.start.step, dM = p.m - drag.start.m;
     if (drag.mode === "move") {
       const minS = Math.min(...drag.origin.map(o => o.s));
@@ -594,8 +603,28 @@
     requestDraw();
   });
 
+  // Delete every note under the path from a to b (sampled finely so fast swipes don't skip notes).
+  function eraseAlong(a, b) {
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const steps = Math.max(1, Math.ceil(dist / 3));
+    const hits = new Set();
+    for (let i = 0; i <= steps; i++) {
+      const x = a.x + (b.x - a.x) * i / steps, y = a.y + (b.y - a.y) * i / steps;
+      const n = noteAt(x, clamp(HI - Math.floor(y / RH), LO, HI));
+      if (n) hits.add(n);
+    }
+    if (hits.size) eraseNotes([...hits]);
+  }
+  function eraseNotes(list) {
+    const gone = new Set(list);
+    song.notes = song.notes.filter(n => !gone.has(n));
+    for (const n of list) selected.delete(n);
+    requestDraw();
+  }
+
   function endDrag() {
     if (!drag) return;
+    document.body.classList.remove("erasing");
     boxEl.hidden = true;
     if (drag.mode !== "box" && serialize() !== drag.before) {
       undoStack.push(drag.before);
