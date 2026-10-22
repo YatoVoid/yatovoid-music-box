@@ -67,14 +67,16 @@
           <tr><td>Shift + drag empty space</td><td>Select a group of notes</td></tr>
           <tr><td>Shift / Ctrl + click a note</td><td>Add or remove it from the selection</td></tr>
           <tr><td>Right-click or double-click</td><td>Delete a note</td></tr>
-          <tr><td>Click the bar numbers</td><td>Choose where playback starts</td></tr>
+          <tr><td>Click or drag the bar numbers</td><td>Move the playhead (works while playing)</td></tr>
+          <tr><td>Drag the playhead line</td><td>Move it to an exact spot (hold Alt to skip snapping)</td></tr>
           <tr><td>Click a key on the left</td><td>Hear that pitch</td></tr>
         </table>
       </div>
       <div>
         <h3>Keyboard</h3>
         <table class="keys-table">
-          <tr><td><kbd>Space</kbd></td><td>Play / stop</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Play / pause (resumes where it stopped)</td></tr>
+          <tr><td><kbd>Home</kbd></td><td>Move the playhead back to the start</td></tr>
           <tr><td><kbd>Ctrl</kbd> <kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut, paste at the mouse position</td></tr>
           <tr><td><kbd>Ctrl</kbd> <kbd>D</kbd></td><td>Duplicate the selection right after itself</td></tr>
           <tr><td><kbd>Ctrl</kbd> <kbd>A</kbd></td><td>Select all notes</td></tr>
@@ -91,7 +93,10 @@
   </section>
 
   <div class="toolbar" role="toolbar" aria-label="Song settings">
-    <button id="btnPlay" type="button" class="primary" aria-pressed="false">Play</button>
+    <span class="transport">
+      <button id="btnRewind" type="button" title="Back to the start (Home)" aria-label="Back to the start">⏮</button>
+      <button id="btnPlay" type="button" class="primary" aria-pressed="false">Play</button>
+    </span>
     <label class="check"><input id="follow" type="checkbox" checked> Follow</label>
     <label>Tempo <input id="bpm" type="number" min="40" max="240" step="1"></label>
     <label>Time
@@ -125,12 +130,13 @@
       <div id="chordRow" class="chord-row"></div>
       <div class="corner corner-bar">Bar</div>
       <div id="rulerWrap" class="ruler-wrap">
-        <canvas id="ruler" class="ruler" title="Click to choose where playback starts"></canvas>
+        <canvas id="ruler" class="ruler" title="Click or drag to move the playhead"></canvas>
+        <div id="playheadHandle" class="playhead-handle" title="Drag to move the playhead"></div>
       </div>
       <canvas id="keys" class="keys"></canvas>
       <div id="gridWrap" class="grid-wrap">
         <div id="gridView" class="grid-view"><canvas id="grid"></canvas></div>
-        <div id="playhead" class="playhead"></div>
+        <div id="playhead" class="playhead" title="Drag to move the playhead"></div>
         <div id="box" class="select-box" hidden></div>
       </div>
     </div>

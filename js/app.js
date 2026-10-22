@@ -12,7 +12,7 @@
 
   const grid = $("grid"), ruler = $("ruler"), keys = $("keys");
   const g = grid.getContext("2d"), rg = ruler.getContext("2d"), kg = keys.getContext("2d");
-  const gridWrap = $("gridWrap"), gridView = $("gridView"), rulerWrap = $("rulerWrap");
+  const gridWrap = $("gridWrap"), gridView = $("gridView"), rulerWrap = $("rulerWrap"), playheadHandle = $("playheadHandle");
   const scroller = $("scroller"), playhead = $("playhead"), boxEl = $("box"), chordRow = $("chordRow");
 
   let CW = 14;                 // pixels per 16th-note step
@@ -412,7 +412,8 @@
     loopSeconds = nextLoop;
     playingStepSec = nextStepSec;
     startedAt = audioCtx.currentTime - offset;
-    $("btnPlay").textContent = "Stop";
+    $("btnPlay").textContent = "Pause";
+    document.body.classList.add("playing");
     cancelAnimationFrame(raf);
     tick();
   }
@@ -420,26 +421,31 @@
     if (source) { try { source.stop(); } catch (e) { /* already stopped */ } source = null; }
   }
   function stopPlayback() {
+    if (source) cursorStep = currentStep(); // pausing keeps the position
     wantPlaying = false;
     stopSource();
     cancelAnimationFrame(raf);
     $("btnPlay").textContent = "Play";
     $("btnPlay").setAttribute("aria-pressed", "false");
+    document.body.classList.remove("playing");
     placePlayhead(cursorStep);
   }
   const currentStep = () => (((audioCtx.currentTime - startedAt) % loopSeconds) / playingStepSec);
   function tick() {
+    raf = requestAnimationFrame(tick);
+    if (scrubbing) return;
     const step = currentStep();
     placePlayhead(step);
     const x = step * CW;
     if ($("follow").checked && (x < scroller.scrollLeft || x > scroller.scrollLeft + scroller.clientWidth - KEYS_W - 40)) {
       scroller.scrollLeft = Math.max(0, x - 40);
     }
-    raf = requestAnimationFrame(tick);
   }
   function placePlayhead(step) {
     if (step == null) return;
-    playhead.style.transform = `translateX(${step * CW}px)`;
+    const t = `translateX(${step * CW}px)`;
+    playhead.style.transform = t;
+    playheadHandle.style.transform = t;
   }
   function togglePlay() { wantPlaying ? stopPlayback() : startPlayback(cursorStep); }
 
@@ -453,12 +459,52 @@
   }
 
   $("btnPlay").addEventListener("click", togglePlay);
-  ruler.addEventListener("pointerdown", e => {
-    const rect = ruler.getBoundingClientRect();
-    cursorStep = clamp(Math.floor((e.clientX - rect.left + scroller.scrollLeft) / CW), 0, totalSteps() - 1);
-    if (source) startPlayback(cursorStep);
+  /* ---------- moving the playhead ---------- */
+  // Drag on the bar ruler, the handle or the playhead line to place it.
+  // It snaps to 16th notes; hold Alt for free placement. While playing, it jumps live.
+  function seek(step) {
+    cursorStep = clamp(step, 0, totalSteps() - 0.001);
+    if (source && cached.key === serialize()) startSource(cached.mix, cursorStep);
+    else if (wantPlaying) startPlayback(cursorStep);
     else placePlayhead(cursorStep);
-  });
+  }
+  function stepFromPointer(e) {
+    const rect = grid.getBoundingClientRect();
+    const raw = (e.clientX - rect.left + scroller.scrollLeft) / CW;
+    return e.altKey ? raw : Math.round(raw);
+  }
+  let scrubbing = false, lastSeek = 0;
+  function startScrub(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    scrubbing = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    document.body.classList.add("scrubbing");
+    seek(stepFromPointer(e));
+  }
+  function moveScrub(e) {
+    if (!scrubbing) return;
+    const step = stepFromPointer(e);
+    placePlayhead(clamp(step, 0, totalSteps()));
+    // Restarting audio on every mouse move would stutter, so limit live seeks while playing.
+    const now = performance.now();
+    if (!source) cursorStep = clamp(step, 0, totalSteps() - 0.001);
+    else if (now - lastSeek > 90) { lastSeek = now; seek(step); }
+  }
+  function endScrub(e) {
+    if (!scrubbing) return;
+    scrubbing = false;
+    document.body.classList.remove("scrubbing");
+    seek(stepFromPointer(e));
+  }
+  for (const el of [rulerWrap, playhead]) {
+    el.addEventListener("pointerdown", startScrub);
+    el.addEventListener("pointermove", moveScrub);
+    el.addEventListener("pointerup", endScrub);
+    el.addEventListener("pointercancel", endScrub);
+  }
+  $("btnRewind").addEventListener("click", () => { seek(0); scroller.scrollLeft = 0; });
   keys.addEventListener("pointerdown", e => {
     const rect = keys.getBoundingClientRect();
     preview(HI - Math.floor((e.clientY - rect.top) / RH));
@@ -625,6 +671,7 @@
     if (e.key === "Escape") { closePanels(); selected.clear(); drawGrid(); return; }
     if (inField) return;
     if (e.key === " " && tag !== "BUTTON") { e.preventDefault(); togglePlay(); return; }
+    if (e.key === "Home") { e.preventDefault(); seek(0); scroller.scrollLeft = 0; return; }
     if (mod && key === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
     if (mod && (key === "y" || (key === "z" && e.shiftKey))) { e.preventDefault(); redo(); return; }
     if (mod && key === "a") { e.preventDefault(); selected = new Set(song.notes); drawGrid(); return; }

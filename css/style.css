@@ -156,12 +156,22 @@ kbd {
 .chord-row { position: sticky; top: 0; z-index: 3; height: 34px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .chord-row select { position: absolute; top: 4px; height: 26px; padding: 0 4px; font-size: 12px; border-radius: 4px; background: var(--surface2); }
 .ruler-wrap { position: sticky; top: 34px; z-index: 3; height: 22px; }
-.ruler { position: sticky; left: 53px; display: block; cursor: pointer; }
+.ruler { position: sticky; left: 53px; display: block; }
 .keys { position: sticky; left: 0; z-index: 2; display: block; border-right: 1px solid var(--line); cursor: pointer; }
 .grid-wrap { position: relative; }
 .grid-view { position: sticky; top: 56px; left: 53px; z-index: 1; }
 .grid-view canvas { display: block; cursor: crosshair; touch-action: none; }
-.playhead { position: absolute; z-index: 2; top: 0; left: 0; width: 2px; background: var(--accent2); pointer-events: none; box-shadow: 0 0 8px var(--accent2); }
+.playhead { position: absolute; z-index: 2; top: 0; left: -5px; width: 12px; cursor: ew-resize; touch-action: none; }
+.playhead::before { content: ""; position: absolute; top: 0; bottom: 0; left: 5px; width: 2px; background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+.playhead-handle {
+  position: absolute; z-index: 2; top: 2px; left: -7px; width: 16px; height: 18px;
+  background: var(--accent2); cursor: ew-resize; touch-action: none;
+  clip-path: polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%);
+}
+.ruler-wrap { cursor: ew-resize; touch-action: none; }
+body.scrubbing, body.scrubbing * { cursor: ew-resize !important; user-select: none; }
+body.playing .playhead { pointer-events: none; } /* while playing, drag the handle above instead */
+.transport { display: inline-flex; gap: 6px; }
 .select-box { position: absolute; z-index: 2; border: 1px dashed var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, transparent); pointer-events: none; }
 
 /* ---------- toast ---------- */
@@ -186,5 +196,5 @@ kbd {
   .mixer { border-inline: 0; padding-inline: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .playhead { box-shadow: none; }
+  .playhead::before { box-shadow: none; }
 }
