@@ -10,9 +10,9 @@
   const DRAFT_KEY = "yatovoid.musicbox.draft", LIBRARY_KEY = "yatovoid.musicbox.library";
   const $ = id => document.getElementById(id);
 
-  const grid = $("grid"), gridBg = $("gridBg"), ruler = $("ruler"), keys = $("keys");
-  const g = grid.getContext("2d"), bg = gridBg.getContext("2d", { alpha: false });
-  const rg = ruler.getContext("2d"), kg = keys.getContext("2d");
+  const grid = $("grid"), ruler = $("ruler"), keys = $("keys");
+  const g = grid.getContext("2d"), rg = ruler.getContext("2d"), kg = keys.getContext("2d");
+  const gridWrap = $("gridWrap"), gridView = $("gridView"), rulerWrap = $("rulerWrap");
   const scroller = $("scroller"), playhead = $("playhead"), boxEl = $("box"), chordRow = $("chordRow");
 
   let CW = 14;                 // pixels per 16th-note step
@@ -152,12 +152,20 @@
     scroller.scrollLeft = centre * CW - scroller.clientWidth / 2;
   });
 
-  /* ---------- layout & drawing ---------- */
+  /* ---------- layout & drawing ----------
+   * The note grid and bar ruler are drawn on canvases the size of the visible
+   * area only. They stay pinned in view (CSS sticky) while a spacer element
+   * provides the full scrollable size, and each redraw paints just the part of
+   * the song that is scrolled into view. This keeps canvases small enough for
+   * every graphics card and keeps drawing fast for long songs.
+   */
+  const HEADER_H = 56; // chord row + ruler
   const dpr = () => window.devicePixelRatio || 1;
+  let ratio = 1, viewW = 1, viewH = 1;
   function sizeCanvas(c, w, h) {
-    const ratio = Math.min(dpr(), 32000 / Math.max(w, h));
-    c.width = Math.round(w * ratio);
-    c.height = Math.round(h * ratio);
+    ratio = dpr();
+    c.width = Math.max(1, Math.round(w * ratio));
+    c.height = Math.max(1, Math.round(h * ratio));
     c.style.width = w + "px";
     c.style.height = h + "px";
     c.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -165,16 +173,25 @@
   const W = () => totalSteps() * CW;
   const H = ROWS * RH;
 
+  function resizeView() {
+    viewW = Math.max(1, Math.min(W(), scroller.clientWidth - KEYS_W - 1));
+    viewH = Math.max(1, Math.min(H, scroller.clientHeight - HEADER_H));
+    gridView.style.width = viewW + "px";
+    gridView.style.height = viewH + "px";
+    sizeCanvas(grid, viewW, viewH);
+    sizeCanvas(ruler, viewW, 22);
+  }
+
   function layout() {
-    sizeCanvas(gridBg, W(), H);
-    sizeCanvas(grid, W(), H);
-    sizeCanvas(ruler, W(), 22);
+    gridWrap.style.width = W() + "px";
+    gridWrap.style.height = H + "px";
+    rulerWrap.style.width = W() + "px";
     sizeCanvas(keys, KEYS_W, H);
     playhead.style.height = H + "px";
+    resizeView();
     buildChordRow();
-    drawBackground();
     drawKeys();
-    drawRuler();
+    drawGrid();
     placePlayhead(source ? null : cursorStep);
   }
 
@@ -194,26 +211,6 @@
     ctx.fill();
   }
 
-  // Rows and grid lines only change with layout or theme, so they live on their own layer.
-  function drawBackground() {
-    const w = W(), spb = stepsPerBar();
-    bg.clearRect(0, 0, w, H);
-    for (let r = 0; r < ROWS; r++) {
-      const m = HI - r;
-      bg.fillStyle = isBlackKey(m) ? palette.surface2 : palette.surface;
-      bg.fillRect(0, r * RH, w, RH);
-      if (m % 12 === 0) { bg.fillStyle = palette.line; bg.fillRect(0, r * RH + RH - 1, w, 1); }
-    }
-    bg.fillStyle = palette.line;
-    for (let i = 0; i <= totalSteps(); i++) {
-      const bar = i % spb === 0, beat = i % STEPS_PER_BEAT === 0;
-      if (!bar && !beat && CW < 10) continue;
-      bg.globalAlpha = bar ? 1 : beat ? 0.55 : 0.22;
-      bg.fillRect(i * CW, 0, bar ? 2 : 1, H);
-    }
-    bg.globalAlpha = 1;
-  }
-
   // Coalesce redraws to at most one per animation frame.
   let drawQueued = false;
   function requestDraw() {
@@ -222,35 +219,60 @@
     requestAnimationFrame(() => { drawQueued = false; drawGrid(); });
   }
 
+  /** Draws the visible part of the grid, its notes and the bar ruler. */
   function drawGrid() {
-    g.clearRect(0, 0, W(), H);
+    if (!song) return;
+    const ox = scroller.scrollLeft, oy = scroller.scrollTop;
+    const spb = stepsPerBar(), total = totalSteps();
+    g.setTransform(ratio, 0, 0, ratio, -ox * ratio, -oy * ratio);
+
+    const r0 = Math.max(0, Math.floor(oy / RH)), r1 = Math.min(ROWS, Math.ceil((oy + viewH) / RH));
+    for (let r = r0; r < r1; r++) {
+      const m = HI - r;
+      g.fillStyle = isBlackKey(m) ? palette.surface2 : palette.surface;
+      g.fillRect(ox, r * RH, viewW, RH);
+      if (m % 12 === 0) { g.fillStyle = palette.line; g.fillRect(ox, r * RH + RH - 1, viewW, 1); }
+    }
+    const s0 = Math.max(0, Math.floor(ox / CW)), s1 = Math.min(total, Math.ceil((ox + viewW) / CW));
+    g.fillStyle = palette.line;
+    for (let i = s0; i <= s1; i++) {
+      const bar = i % spb === 0, beat = i % STEPS_PER_BEAT === 0;
+      if (!bar && !beat && CW < 10) continue;
+      g.globalAlpha = bar ? 1 : beat ? 0.55 : 0.22;
+      g.fillRect(i * CW, oy, bar ? 2 : 1, viewH);
+    }
+    g.globalAlpha = 1;
+
     for (const n of song.notes) {
-      const x = n.s * CW, y = (HI - n.m) * RH;
-      g.globalAlpha = n.s >= totalSteps() ? 0.35 : 1;
+      const x = n.s * CW, y = (HI - n.m) * RH, w = n.d * CW;
+      if (x > ox + viewW || x + w < ox || y > oy + viewH || y + RH < oy) continue;
+      g.globalAlpha = n.s >= total ? 0.35 : 1;
       g.fillStyle = selected.has(n) ? palette.accent2 : palette.accent;
-      roundRect(g, x + 1, y + 1, Math.max(3, n.d * CW - 2), RH - 2, 3);
+      roundRect(g, x + 1, y + 1, Math.max(3, w - 2), RH - 2, 3);
       g.fillStyle = palette.noteText;
       g.globalAlpha *= 0.45;
-      g.fillRect(x + n.d * CW - 4, y + 4, 1.5, RH - 8); // resize grip
+      g.fillRect(x + w - 4, y + 4, 1.5, RH - 8); // resize grip
       g.globalAlpha = 1;
     }
+    drawRuler(ox);
   }
 
-  function drawRuler() {
-    const w = W(), spb = stepsPerBar();
-    rg.clearRect(0, 0, w, 22);
+  function drawRuler(ox) {
+    const spb = stepsPerBar(), total = totalSteps();
+    rg.setTransform(ratio, 0, 0, ratio, -ox * ratio, 0);
     rg.fillStyle = palette.surface;
-    rg.fillRect(0, 0, w, 22);
+    rg.fillRect(ox, 0, viewW, 22);
     rg.font = "11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
     rg.textBaseline = "middle";
-    for (let i = 0; i <= totalSteps(); i += STEPS_PER_BEAT) {
+    const first = Math.max(0, Math.floor(ox / CW / STEPS_PER_BEAT) * STEPS_PER_BEAT);
+    for (let i = first; i <= total && i * CW <= ox + viewW; i += STEPS_PER_BEAT) {
       const bar = i % spb === 0;
       rg.fillStyle = bar ? palette.fg : palette.muted;
       rg.fillRect(i * CW, bar ? 0 : 14, 1, bar ? 22 : 8);
-      if (bar && i < totalSteps()) rg.fillText(String(i / spb + 1), i * CW + 5, 9);
+      if (bar && i < total) rg.fillText(String(i / spb + 1), i * CW + 5, 9);
     }
     rg.fillStyle = palette.line;
-    rg.fillRect(0, 21, w, 1);
+    rg.fillRect(ox, 21, viewW, 1);
   }
 
   function drawKeys() {
@@ -433,7 +455,7 @@
   $("btnPlay").addEventListener("click", togglePlay);
   ruler.addEventListener("pointerdown", e => {
     const rect = ruler.getBoundingClientRect();
-    cursorStep = clamp(Math.floor((e.clientX - rect.left) / CW), 0, totalSteps() - 1);
+    cursorStep = clamp(Math.floor((e.clientX - rect.left + scroller.scrollLeft) / CW), 0, totalSteps() - 1);
     if (source) startPlayback(cursorStep);
     else placePlayhead(cursorStep);
   });
@@ -447,7 +469,7 @@
 
   function pointerInfo(e) {
     const rect = grid.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const x = e.clientX - rect.left + scroller.scrollLeft, y = e.clientY - rect.top + scroller.scrollTop;
     return { x, y, step: Math.floor(x / CW), m: clamp(HI - Math.floor(y / RH), LO, HI) };
   }
   function noteAt(x, m) {
@@ -772,10 +794,12 @@
     try { clipboard = JSON.parse(localStorage.getItem("yatovoid.musicbox.clipboard")) || []; } catch (e) { clipboard = []; }
 
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    const repaint = () => { readPalette(); drawBackground(); drawKeys(); drawRuler(); drawGrid(); };
+    const repaint = () => { readPalette(); drawKeys(); drawGrid(); };
     scheme.addEventListener ? scheme.addEventListener("change", repaint) : scheme.addListener(repaint);
     new MutationObserver(repaint).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    window.addEventListener("resize", () => { layout(); drawGrid(); });
+    scroller.addEventListener("scroll", requestDraw, { passive: true });
+    // The visible area changes when the window resizes or a panel opens or closes.
+    new ResizeObserver(() => { resizeView(); drawGrid(); }).observe(scroller);
   }
   init();
 })();

@@ -124,11 +124,12 @@
       <div class="corner corner-chord">Chord</div>
       <div id="chordRow" class="chord-row"></div>
       <div class="corner corner-bar">Bar</div>
-      <canvas id="ruler" class="ruler" title="Click to choose where playback starts"></canvas>
+      <div id="rulerWrap" class="ruler-wrap">
+        <canvas id="ruler" class="ruler" title="Click to choose where playback starts"></canvas>
+      </div>
       <canvas id="keys" class="keys"></canvas>
-      <div class="grid-wrap">
-        <canvas id="gridBg" class="grid-bg" aria-hidden="true"></canvas>
-        <canvas id="grid"></canvas>
+      <div id="gridWrap" class="grid-wrap">
+        <div id="gridView" class="grid-view"><canvas id="grid"></canvas></div>
         <div id="playhead" class="playhead"></div>
         <div id="box" class="select-box" hidden></div>
       </div>
