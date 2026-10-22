@@ -2,7 +2,7 @@
  * YatoVoid Music Box - sound engine.
  * Renders a song to a mono Float32Array at 44.1 kHz using simple 8-bit style
  * oscillators (pulse waves and a 4-bit stepped triangle), then adds a soft
- * echo and a gentle low-pass. The result loops seamlessly: anything that rings
+ * echo and a gentle low-pass. The result loops cleanly: anything that rings
  * past the end of the song wraps around to the beginning.
  */
 "use strict";
@@ -154,7 +154,7 @@ function songLengthSamples(song) {
   return Math.max(1, Math.round(song.bars * song.beatsPerBar * (60 / song.bpm) * SR));
 }
 
-/** Render a whole song as a seamless loop. */
+/** Render a whole song as a loop with no gap at the end. */
 function renderSong(song) {
   const beat = 60 / song.bpm;
   const stepSec = beat / STEPS_PER_BEAT;

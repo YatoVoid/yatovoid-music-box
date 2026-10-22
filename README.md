@@ -1,86 +1,91 @@
 # YatoVoid Music Box
 
-A free 8-bit music editor that runs entirely in your browser. Write chiptune melodies on a piano roll, pick a chord for each bar to get an automatic bass line and backing, and export the result as a seamless looping WAV, a MIDI file, or a song file you can open again later.
+An 8-bit music editor that runs in the browser. Put notes on a piano roll, choose a chord for each bar, and it plays them back with NES-style square and triangle waves. When you're done, download the song as a WAV that loops cleanly, as a MIDI file, or as a song file you can open again later.
 
-No install, no account, no server. Everything happens on your computer.
+It's free and there's nothing to install. Your songs stay on your own computer.
 
-### ▶ [Open YatoVoid Music Box](https://yatovoid.github.io/yatovoid-music-box/)
+**Open it here: https://yatovoid.github.io/yatovoid-music-box/**
 
-[![YatoVoid Music Box editor](docs/screenshot.png)](https://yatovoid.github.io/yatovoid-music-box/)
+[![Demo of YatoVoid Music Box](docs/demo.gif)](https://yatovoid.github.io/yatovoid-music-box/)
 
-## Features
+The animation above has no sound. [Watch the demo with sound (MP4, 40 seconds)](docs/demo.mp4).
 
-- **Piano roll editor** from C3 to C7 on a 16th-note grid, with zoom.
-- **Hear while you edit:** notes play as you place them, and you hear every pitch while dragging.
-- **Move, resize, select:** drag notes, stretch them from the right edge, box-select with Shift.
-- **Copy, cut, paste and duplicate** notes, including between songs.
-- **Undo and redo** for every change (up to 200 steps).
-- **Automatic backing:** choose a chord per bar (major, minor, 7th, maj7, m7, 6th, sus4, dim) and the editor adds a triangle bass and chord stabs that follow the time signature.
-- **Four lead sounds:** Music box, Square, Soft flute and Thin chip.
-- **Mixer:** separate volume for melody, bass and chords.
-- **3/4 and 4/4**, tempo 40–240 BPM, 1–64 bars.
-- **Seamless loops:** anything still ringing at the end of the song wraps around to the start, so exported audio loops without a click. Useful for game background music.
-- **My songs library** saved in your browser, plus three example songs.
-- **Upload** `.json` song files or `.mid` MIDI files.
-- **Download** as a song file (`.json`), MIDI (`.mid`) or audio (`.wav`).
+## What it does
+
+- Piano roll from C3 to C7 on a 16th-note grid, with zoom.
+- You hear each note when you place it, and every pitch while you drag it.
+- Drag notes to move them, drag the right edge to resize, Shift-drag to select a group.
+- Copy, cut, paste and duplicate, including between songs.
+- Right-click to delete a note, or right-click and drag to erase everything you pass over.
+- Undo and redo for every change.
+- Pick a chord per bar and it adds a bass line and chord backing that follow the time signature. Major, minor, 7, maj7, m7, 6, sus4 and dim chords are available on all 12 roots.
+- Four lead sounds: Music box, Square, Soft flute and Thin chip.
+- Separate volume for melody, bass and chords.
+- 3/4 or 4/4, 40 to 240 BPM, 1 to 64 bars.
+- A playhead you can drag anywhere, even while the song is playing.
+- WAV exports loop without a gap or click, which makes them easy to use as game background music.
+- A song library saved in your browser, plus three example songs to start from.
+- Upload `.json` song files or `.mid` files. Download as song file, MIDI or WAV.
 - Light and dark themes that follow your system setting.
 
 ## Getting started
 
-1. Open **https://yatovoid.github.io/yatovoid-music-box/**.
-2. Press **Play** to hear the example song, or press **New** to start from an empty song.
-3. Click on the grid to add notes, pick a chord above each bar, and press **Save** to keep your song.
-4. Use **Download → WAV** when you want the finished audio.
+1. Open https://yatovoid.github.io/yatovoid-music-box/
+2. Press **Play** to hear the example song, or **New** to start with an empty one.
+3. Click the grid to add notes and choose a chord above each bar.
+4. Give the song a name and press **Save**.
+5. Press **Download: WAV** when you want the audio.
 
-Open **My songs** for your saved songs and three examples, and **Help** for every shortcut.
+**My songs** lists everything you've saved plus the examples. **Help** shows all the controls.
 
-## How to use it
+## Controls
 
 ### Mouse
 
-| Action | Result |
+| Action | What it does |
 | --- | --- |
-| Click empty space | Add a note using the length chosen in **Note** |
-| Drag a note | Move it in time and pitch (you hear each new pitch) |
-| Drag a note's right edge | Make it longer or shorter |
-| Shift + drag on empty space | Select a group of notes |
-| Shift or Ctrl + click a note | Add it to or remove it from the selection |
-| Right-click or double-click a note | Delete it |
-| Right-click and drag | Erase every note the mouse passes over (one undo step) |
-| Click or drag on the bar numbers | Move the playhead, even while the song plays |
-| Drag the playhead's handle or line | Place it on an exact spot (hold `Alt` to skip snapping) |
-| Click a key name on the left | Hear that pitch |
+| Click empty space | Adds a note, using the length set in **Note** |
+| Drag a note | Moves it in time and pitch |
+| Drag a note's right edge | Makes it longer or shorter |
+| Shift + drag on empty space | Selects every note inside the box |
+| Shift or Ctrl + click a note | Adds it to or removes it from the selection |
+| Right-click or double-click a note | Deletes it |
+| Right-click + drag | Erases every note the mouse passes over (one undo step) |
+| Click or drag the bar numbers | Moves the playhead, also while playing |
+| Drag the playhead handle or line | Places it exactly (hold Alt to turn off snapping) |
+| Click a note name on the left | Plays that pitch |
 
 ### Keyboard
 
-| Keys | Result |
+| Keys | What it does |
 | --- | --- |
-| `Space` | Play / pause (resumes where it stopped) |
-| `Home` or ⏮ | Move the playhead back to the start |
-| `Ctrl+C` / `Ctrl+X` / `Ctrl+V` | Copy, cut, paste (pastes where the mouse last was) |
-| `Ctrl+D` | Duplicate the selection right after itself |
-| `Ctrl+A` | Select all notes |
-| `Ctrl+Z` / `Ctrl+Y` (or `Ctrl+Shift+Z`) | Undo / redo |
-| `Ctrl+S` | Save to My songs |
-| `Delete` / `Backspace` | Delete selected notes |
+| Space | Play and pause. Pausing keeps your place. |
+| Home, or the rewind button | Moves the playhead back to the start |
+| Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut, and paste where the mouse last was |
+| Ctrl+D | Duplicates the selection right after itself |
+| Ctrl+A | Selects all notes |
+| Ctrl+Z, Ctrl+Y (or Ctrl+Shift+Z) | Undo and redo |
+| Ctrl+S | Saves to My songs |
+| Delete or Backspace | Deletes the selected notes |
 | Arrow keys | Move the selection by a semitone or a 16th note |
-| `Shift` + arrow keys | Move by an octave or a beat |
-| `Esc` | Clear the selection and close panels |
+| Shift + arrow keys | Move the selection by an octave or a beat |
+| Esc | Clears the selection and closes panels |
 
-On macOS use `Cmd` instead of `Ctrl`.
+On a Mac, use Cmd instead of Ctrl.
 
-### Saving your work
+## Saving and sharing songs
 
-- **Save** stores the current song in **My songs**, using the song name. Saving again with the same name updates it.
-- The song you are working on is also kept automatically, so it is still there when you reopen the page.
-- Songs live in your browser's local storage, on that computer and in that browser only. Clearing site data removes them, so use **Download → Song** to keep a backup or move songs to another computer, and **Upload** to open them again.
+**Save** puts the current song in **My songs** under its name. Saving again with the same name overwrites it. The song you're working on is also kept automatically, so it's still there if you close the tab.
 
-### Using the music in a game
+Saved songs live in your browser's local storage. They're only on that computer, in that browser, and clearing your browsing data deletes them. To keep a backup or move a song to another computer, use **Download: Song** and open the file later with **Upload**.
 
-Download the **WAV**. The file is a seamless loop, so set your engine to repeat it. For example, with Python and pygame:
+## Using a song in a game
+
+Download the WAV and set it to loop in your engine. With Python and pygame:
 
 ```python
 import pygame
+
 pygame.mixer.init()
 pygame.mixer.music.load("my-song.wav")
 pygame.mixer.music.play(loops=-1)
@@ -88,7 +93,7 @@ pygame.mixer.music.play(loops=-1)
 
 ## Song file format
 
-Song files are plain JSON:
+Song files are plain JSON, so you can also generate or edit them with your own scripts.
 
 ```json
 {
@@ -100,43 +105,44 @@ Song files are plain JSON:
   "bars": 32,
   "lead": "musicbox",
   "volumes": { "lead": 1, "bass": 1, "chords": 1 },
-  "chords": ["F", "Bb", "F", "C", "..."],
+  "chords": ["F", "Bb", "F", "C"],
   "notes": [{ "m": 72, "s": 0, "d": 4 }]
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `bpm` | Tempo, 40–240 |
+| `bpm` | Tempo, 40 to 240 |
 | `beatsPerBar` | `3` or `4` |
-| `bars` | Song length in bars, 1–64 |
+| `bars` | Length in bars, 1 to 64 |
 | `lead` | `musicbox`, `square`, `soft` or `chip` |
-| `volumes` | Mixer levels, 0–1.5 |
-| `chords` | One chord per bar, such as `"C"`, `"Am"`, `"G7"`, `"Fmaj7"`, `"Dm7"`, `"C6"`, `"Dsus4"`, `"Bdim"`, or `""` for none |
+| `volumes` | Mixer levels from 0 to 1.5 |
+| `chords` | One chord per bar, for example `"C"`, `"Am"`, `"G7"`, `"Fmaj7"`, `"Dm7"`, `"C6"`, `"Dsus4"`, `"Bdim"`. Use `""` for no chord. |
 | `notes[].m` | MIDI note number, 48 (C3) to 96 (C7) |
-| `notes[].s` | Start position in 16th notes from the beginning of the song |
+| `notes[].s` | Start, counted in 16th notes from the beginning of the song |
 | `notes[].d` | Length in 16th notes |
 
-### MIDI
+## MIDI
 
-- **Export** writes three tracks: Melody, Chords and Bass, with tempo and time signature.
-- **Import** reads type 0 and type 1 MIDI files. Every note except drums becomes an editable melody note, moved into the C3–C7 range if needed. Chords are left empty so you can choose them yourself.
+Exported MIDI files have three tracks (Melody, Chords and Bass) plus the tempo and time signature, so you can take a song into a full DAW.
 
-## How the sound works
+Imported MIDI files can be type 0 or type 1. Every note except drums becomes an editable melody note, shifted by octaves into the C3 to C7 range if needed. Chords start empty so you can choose them yourself.
 
-All audio is generated in plain JavaScript; there are no samples. Melodies use pulse waves at different duty cycles (12.5%, 25%, 50%) and a stepped 4-bit triangle like the NES. The bass is the same triangle. The mix gets a short echo timed to one beat and a gentle low-pass filter, then is normalised. Rendering is done ahead of time into a buffer, which is what you hear on playback and what gets saved as WAV, so the download always matches what you heard.
+## How the sound is made
+
+There are no samples. Everything is generated in JavaScript: pulse waves at 12.5%, 25% and 50% duty cycle for the lead sounds, and a 4-bit stepped triangle wave for the bass, like the NES. The mix gets a short echo one beat long and a gentle low-pass filter.
+
+The song is rendered into a buffer in a background worker, and that buffer is what you hear and what gets saved, so the WAV always sounds exactly like playback. Notes still ringing at the end of the song carry over into the beginning, which is why exports loop cleanly.
 
 ## Running it offline
-
-You can also use it without an internet connection:
 
 ```bash
 git clone https://github.com/YatoVoid/yatovoid-music-box.git
 ```
 
-Then open `index.html` in your browser. There is nothing to install or build.
+Then open `index.html` in your browser. There's no build step and nothing to install.
 
-## Project structure
+## Project layout
 
 ```
 index.html        Page layout and controls
@@ -144,17 +150,17 @@ css/style.css     Styles and light/dark themes
 js/synth.js       Sound engine, chords, WAV encoding
 js/midi.js        MIDI import and export
 js/demos.js       Example songs
-js/app.js         Editor, playback, library, keyboard shortcuts
-docs/             Screenshot used in this README
+js/app.js         Editor, playback, song library, keyboard shortcuts
+docs/             Demo video and screenshot
 ```
 
 ## Contributing
 
-Bug reports and ideas are welcome in [Issues](https://github.com/YatoVoid/yatovoid-music-box/issues). Pull requests are welcome too; the whole app is plain HTML, CSS and JavaScript with no dependencies, so you can edit a file and refresh the page to see the change.
+Bug reports and ideas are welcome in [Issues](https://github.com/YatoVoid/yatovoid-music-box/issues), and so are pull requests. The app is plain HTML, CSS and JavaScript with no dependencies, so you can change a file and refresh the page to see the result.
 
 ## Browser support
 
-Works in current versions of Chrome, Edge, Firefox and Safari. Audio starts after your first click or key press, as browsers require.
+Works in current Chrome, Edge, Firefox and Safari. Browsers only allow sound after you click or press a key, so playback starts on your first interaction.
 
 ## License
 
