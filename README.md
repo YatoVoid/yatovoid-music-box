@@ -4,7 +4,9 @@ A free 8-bit music editor that runs entirely in your browser. Write chiptune mel
 
 No install, no account, no server. Everything happens on your computer.
 
-![YatoVoid Music Box editor](docs/screenshot.png)
+### ▶ [Open YatoVoid Music Box](https://yatovoid.github.io/yatovoid-music-box/)
+
+[![YatoVoid Music Box editor](docs/screenshot.png)](https://yatovoid.github.io/yatovoid-music-box/)
 
 ## Features
 
@@ -23,21 +25,14 @@ No install, no account, no server. Everything happens on your computer.
 - **Download** as a song file (`.json`), MIDI (`.mid`) or audio (`.wav`).
 - Light and dark themes that follow your system setting.
 
-## Try it
+## Getting started
 
-Open the GitHub Pages site for this repository, or run it locally:
+1. Open **https://yatovoid.github.io/yatovoid-music-box/**.
+2. Press **Play** to hear the example song, or press **New** to start from an empty song.
+3. Click on the grid to add notes, pick a chord above each bar, and press **Save** to keep your song.
+4. Use **Download → WAV** when you want the finished audio.
 
-```bash
-git clone https://github.com/<your-username>/yatovoid-music-box.git
-cd yatovoid-music-box
-```
-
-Then open `index.html` in Chrome, Edge or Firefox. It works straight from the file, with no build step. If you prefer a local server:
-
-```bash
-python3 -m http.server 8000
-# then visit http://localhost:8000
-```
+Open **My songs** for your saved songs and three examples, and **Help** for every shortcut.
 
 ## How to use it
 
@@ -128,6 +123,16 @@ Song files are plain JSON:
 
 All audio is generated in plain JavaScript; there are no samples. Melodies use pulse waves at different duty cycles (12.5%, 25%, 50%) and a stepped 4-bit triangle like the NES. The bass is the same triangle. The mix gets a short echo timed to one beat and a gentle low-pass filter, then is normalised. Rendering is done ahead of time into a buffer, which is what you hear on playback and what gets saved as WAV, so the download always matches what you heard.
 
+## Running it offline
+
+You can also use it without an internet connection:
+
+```bash
+git clone https://github.com/YatoVoid/yatovoid-music-box.git
+```
+
+Then open `index.html` in your browser. There is nothing to install or build.
+
 ## Project structure
 
 ```
@@ -140,12 +145,9 @@ js/app.js         Editor, playback, library, keyboard shortcuts
 docs/             Screenshot used in this README
 ```
 
-## Publishing with GitHub Pages
+## Contributing
 
-1. Push this repository to GitHub.
-2. Open **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**, select `main` and `/ (root)`, then **Save**.
-4. After a minute the editor is live at `https://<your-username>.github.io/yatovoid-music-box/`.
+Bug reports and ideas are welcome in [Issues](https://github.com/YatoVoid/yatovoid-music-box/issues). Pull requests are welcome too; the whole app is plain HTML, CSS and JavaScript with no dependencies, so you can edit a file and refresh the page to see the change.
 
 ## Browser support
 
