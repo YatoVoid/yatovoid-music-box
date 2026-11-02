@@ -24,13 +24,11 @@
   let cursorStep = 0;          // where playback starts
   let lastSavedJson = "";
 
-  /* ---------- storage ---------- */
   const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch (e) { return false; } },
   };
 
-  /* ---------- song helpers ---------- */
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const volume = v => (v == null || isNaN(v) ? 1 : clamp(+v, 0, 1.5));
   const stepsPerBar = () => song.beatsPerBar * STEPS_PER_BEAT;
@@ -61,7 +59,6 @@
   const blankSong = () => cleanSong({ name: "Untitled", bpm: 110, beatsPerBar: 4, bars: 8, lead: "musicbox" });
   const serialize = () => JSON.stringify(song);
 
-  /* ---------- undo ---------- */
   function pushUndo() {
     undoStack.push(serialize());
     if (undoStack.length > 200) undoStack.shift();
@@ -83,7 +80,6 @@
     restore(redoStack.pop());
   }
 
-  /* ---------- change handling ---------- */
   function changed() {
     store.set(DRAFT_KEY, song);
     updateTitle();
@@ -101,7 +97,6 @@
     $("saveState").dataset.state = unsaved ? "dirty" : "clean";
   }
 
-  /* ---------- controls ---------- */
   function syncControls() {
     $("songName").value = song.name;
     $("bpm").value = song.bpm;
@@ -152,13 +147,8 @@
     scroller.scrollLeft = centre * CW - scroller.clientWidth / 2;
   });
 
-  /* ---------- layout & drawing ----------
-   * The note grid and bar ruler are drawn on canvases the size of the visible
-   * area only. They stay pinned in view (CSS sticky) while a spacer element
-   * provides the full scrollable size, and each redraw paints just the part of
-   * the song that is scrolled into view. This keeps canvases small enough for
-   * every graphics card and keeps drawing fast for long songs.
-   */
+  // The grid and ruler canvases only cover the visible area and stay pinned with sticky;
+  // song-wide canvases failed to display on some graphics cards.
   const HEADER_H = 56; // chord row + ruler
   const dpr = () => window.devicePixelRatio || 1;
   let ratio = 1, viewW = 1, viewH = 1;
@@ -248,7 +238,7 @@
       if (x > ox + viewW || x + w < ox || y > oy + viewH || y + RH < oy) continue;
       g.globalAlpha = n.s >= total ? 0.35 : 1;
       g.fillStyle = selected.has(n) ? palette.accent2 : palette.accent;
-      roundRect(g, x + 1, y + 1, Math.max(3, w - 2), RH - 2, 3);
+      roundRect(g, x + 1, y + 1, Math.max(3, w - 2), RH - 2, 1);
       g.fillStyle = palette.noteText;
       g.globalAlpha *= 0.45;
       g.fillRect(x + w - 4, y + 4, 1.5, RH - 8); // resize grip
@@ -311,7 +301,6 @@
     }
   }
 
-  /* ---------- audio ---------- */
   let audioCtx = null, source = null, startedAt = 0, loopSeconds = 0, playingStepSec = 0, raf = 0, renderTimer = 0;
   let wantPlaying = false;
 
@@ -380,6 +369,38 @@
     if (audioCtx.state === "suspended") audioCtx.resume();
     return audioCtx;
   }
+  // A soft tape-deck key: a low thump with a muffled tick on top.
+  let clickBuf = null;
+  function clickSound() {
+    const a = ctx();
+    if (!clickBuf) {
+      const n = Math.floor(a.sampleRate * 0.05);
+      clickBuf = a.createBuffer(1, n, a.sampleRate);
+      const d = clickBuf.getChannelData(0);
+      let lp = 0;
+      for (let i = 0; i < n; i++) {
+        const t = i / a.sampleRate;
+        const thump = Math.sin(2 * Math.PI * 140 * t) * Math.exp(-t * 90);
+        lp += 0.18 * ((Math.random() * 2 - 1) - lp);
+        const tick = lp * Math.exp(-t * 400);
+        d[i] = 0.6 * thump + 0.9 * tick;
+      }
+    }
+    const src = a.createBufferSource();
+    const gain = a.createGain();
+    src.buffer = clickBuf;
+    src.playbackRate.value = 0.94 + Math.random() * 0.12;
+    gain.gain.value = 0.12;
+    src.connect(gain).connect(a.destination);
+    src.start();
+  }
+  document.addEventListener("pointerdown", e => {
+    if (e.button === 0 && e.target.closest("button")) clickSound();
+  });
+  document.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === " ") && !e.repeat && e.target.closest && e.target.closest("button")) clickSound();
+  });
+
   function playBuffer(samples) {
     const a = ctx();
     const buf = a.createBuffer(1, samples.length, SR);
@@ -459,7 +480,6 @@
   }
 
   $("btnPlay").addEventListener("click", togglePlay);
-  /* ---------- moving the playhead ---------- */
   // Drag on the bar ruler, the handle or the playhead line to place it.
   // It snaps to 16th notes; hold Alt for free placement. While playing, it jumps live.
   function seek(step) {
@@ -510,7 +530,6 @@
     preview(HI - Math.floor((e.clientY - rect.top) / RH));
   });
 
-  /* ---------- note editing with the mouse ---------- */
   let drag = null;
 
   function pointerInfo(e) {
@@ -643,7 +662,6 @@
     if (hit) { pushUndo(); removeNotes([hit]); }
   });
 
-  /* ---------- selection commands ---------- */
   function removeNotes(list) {
     const gone = new Set(list);
     song.notes = song.notes.filter(n => !gone.has(n));
@@ -689,7 +707,6 @@
     return true;
   }
 
-  /* ---------- keyboard ---------- */
   document.addEventListener("keydown", e => {
     const tag = e.target.tagName;
     const inField = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
@@ -720,7 +737,6 @@
     }
   });
 
-  /* ---------- library ---------- */
   const library = () => store.get(LIBRARY_KEY, {});
 
   function saveToLibrary() {
@@ -787,7 +803,6 @@
     }
   }
 
-  /* ---------- panels ---------- */
   function togglePanel(id, button) {
     const panel = $(id);
     const open = panel.hidden;
@@ -803,7 +818,6 @@
   $("btnHelp").addEventListener("click", () => togglePanel("help", "btnHelp"));
   for (const btn of document.querySelectorAll("[data-close]")) btn.addEventListener("click", closePanels);
 
-  /* ---------- file buttons ---------- */
   const fileBase = () => (song.name || "song").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").toLowerCase() || "song";
   function download(blob, filename) {
     const url = URL.createObjectURL(blob);
@@ -845,7 +859,6 @@
     getMix().then(mix => download(encodeWav(mix), name));
   });
 
-  /* ---------- toast ---------- */
   let toastTimer = 0;
   function toast(text, isError) {
     const el = $("toast");
@@ -856,7 +869,6 @@
     toastTimer = setTimeout(() => { el.hidden = true; }, isError ? 6000 : 2600);
   }
 
-  /* ---------- start ---------- */
   function init() {
     readPalette();
     fillVoiceSelect();

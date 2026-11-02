@@ -26,7 +26,6 @@ function noteNumber(name) {
   return 12 * (+match[2] + 1) + PITCH_CLASS[match[1]];
 }
 
-/* ---------- chords ---------- */
 const CHORD_ROOTS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const QUALITIES = {
   "": [0, 4, 7], m: [0, 3, 7], "7": [0, 4, 7, 10], maj7: [0, 4, 7, 11],
@@ -70,7 +69,6 @@ function backingPattern(song) {
   return events;
 }
 
-/* ---------- oscillators ---------- */
 const pulseShape = duty => ph => (ph < duty ? 1 : -1);
 const tri4 = ph => Math.round((2 - 4 * Math.abs(ph - 0.5)) * 7.5) / 7.5 - 1; // NES-style 4-bit triangle
 
@@ -137,7 +135,6 @@ const VOICES = {
   },
 };
 
-/* ---------- mixing ---------- */
 function lowpassLoop(x, cutoff) {
   // Run the filter twice around the loop so the end flows into the start.
   const a = Math.exp(-2 * Math.PI * cutoff / SR);
