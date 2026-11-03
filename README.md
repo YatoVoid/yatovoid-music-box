@@ -6,7 +6,7 @@ You put notes on a piano roll, pick a chord for each bar, and it plays them back
 
 [![Demo of YatoVoid Music Box](docs/demo.gif)](https://yatovoid.github.io/yatovoid-music-box/)
 
-The GIF has no sound. [Demo with sound (MP4, 40 seconds)](docs/demo.mp4).
+The GIF has no sound. [Demo with sound (MP4, 1 minute)](docs/demo.mp4).
 
 The piano roll runs from C3 to C7 on a 16th-note grid. You hear each note as you place it and every pitch while you drag it. The chord picker above each bar adds a bass line and chord backing that follow the time signature, with major, minor, 7, maj7, m7, 6, sus4 and dim on all 12 roots. There are four lead sounds (Music box, Square, Soft flute, Thin chip), a volume for each of melody, bass and chords, 3/4 or 4/4 time, 40 to 240 BPM, and 1 to 64 bars.
 
